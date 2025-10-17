@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Babylon.js PLY Point Cloud Viewer</title>
+    <!-- Babylon.js libraries -->
+    <script src="https://cdn.babylonjs.com/babylon.js"></script>
+    <script src="https://cdn.babylonjs.com/loaders/babylonjs.loaders.min.js"></script>
+    <style>
+        html, body {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+        }
+        #renderCanvas {
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+        }
+        #infoPanel {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            padding: 10px;
+            background-color: rgba(0, 0, 0, 0.5);
+            color: white;
+            border-radius: 8px;
+            font-size: 16px;
+            z-index: 10;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Info panel to display loading status and model name -->
+    <div id="infoPanel">Loading...</div>
+    <!-- The canvas where the 3D scene will be rendered -->
+    <canvas id="renderCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById("renderCanvas");
+        const engine = new BABYLON.Engine(canvas, true);
+        let scene;
+
+        // --- Model Configuration ---
+        // An array of PLY file names to be loaded.
+        const plyFiles = ["Full_Gingerbread_House_point_cloud.ply", "Sakura_Wang_Center_point_cloud.ply", "Ben_Unbound_point_cloud.ply", "Collage_Wall_CAC_point_cloud.ply","Surfing_point_cloud.ply", "Han_Qin_point_cloud.ply", "The_Wii_point_cloud.ply", "Adelyn_Peter_point_cloud.ply", "White_Board_Gallery_point_cloud.ply","Ancient_Moose_point_cloud.ply", "Amphitheater_point_cloud.ply", "Rainbow_Tree_point_cloud.ply", "Rick_Gatteau_Wolfie_point_cloud.ply", "Dream_Ball_point_cloud.ply","Hercules_point_cloud.ply", "Safta_point_cloud.ply", "Wolfie_Photo_Opportunity_point_cloud.ply", "The_rocket_point_cloud.ply", "Rabbit_point_cloud.ply","Laz_point_cloud.ply", "French_Onion_Soup_point_cloud.ply", "Coming_Soon_point_cloud.ply", "Dogs_On_Big_Chair_point_cloud.ply", "Climber_point_cloud.ply","Lars_in_his_Habitat_point_cloud.ply", "Astronaut_point_cloud.ply", "Labor_of_LOVE_point_cloud.ply", "Yemoe_point_cloud.ply", "Vent_point_cloud.ply","Astronaut_standing_point_cloud.ply", "Bench_point_cloud.ply", "Octopus_point_cloud.ply", "Cocomelon_point_cloud.ply", "Picnic_Short_point_cloud.ply","Asuka_point_cloud.ply", "Franky_point_cloud.ply", "Reality_Deck_point_cloud.ply", "Priya_point_cloud.ply", "Juvenile_Chimpanzee_Skele_point_cloud.ply","Autumn_point_cloud.ply", "Scarlet_point_cloud.ply", "Senior_Art_Show_point_cloud.ply", "Gudetama_point_cloud.ply", "Ctrl_Art_Create_point_cloud.ply","TLL_Whiteboard_point_cloud.ply", "LI_Express_Rest_Stop_point_cloud.ply"];
+        // Base URL for the GitHub repository where the PLY files are stored.
+        const repoBaseUrl = "https://raw.githubusercontent.com/liamyehudai/plyLibrary/main/assets/";
+
+        // Map the file names to a more structured format with a clean name and full URL.
+        const models = plyFiles.map(file => {
+            const name = file.replace(/_point_cloud\.ply/g, '').replace(/_/g, ' ');
+            return {
+                name: name,
+                url: repoBaseUrl + file
+            };
+        });
+
+        let currentModelIndex = -1; // Initialize to -1 to ensure the first load always happens
+
+        // --- Inactivity Tracker ---
+        let inactivityTimer;
+        let isAttractModeActive = false;
+        const inactivityTimeout = 10000; // 10 seconds
+        const modelSwitchInterval = 60000; // 60 seconds
+        let modelSwitchIntervalId;
+        let attractModeAngle = 0; // Angle for attract mode rotation
+
+        const infoPanel = document.getElementById("infoPanel");
+
+        /**
+         * Loads a model based on the provided index in the models array.
+         * @param {number} modelIndex - The index of the model to load.
+         */
+        const loadModel = async (modelIndex) => {
+            // Prevent reloading the same model
+            if (modelIndex === currentModelIndex) return;
+
+            currentModelIndex = modelIndex;
+            const model = models[currentModelIndex];
+            infoPanel.textContent = `Loading: ${model.name}`;
+
+            // Clear existing scene if it exists to free up resources.
+            if (scene) {
+                scene.dispose();
+            }
+
+            // Create a new scene for the new model.
+            scene = createScene();
+
+            try {
+                // Import the PLY model. This will be loaded as a point cloud.
+                const result = await BABYLON.SceneLoader.ImportMeshAsync("", "", model.url, scene);
+                console.log("Model loaded successfully:", result);
+                infoPanel.textContent = `Viewing: ${model.name}`;
+            } catch (error) {
+                console.error("Error loading model:", error);
+                infoPanel.textContent = `Error loading: ${model.name}`;
+            }
+        };
+
+        /**
+         * Creates the main Babylon.js scene, camera, and light.
+         * @returns {BABYLON.Scene} The created scene.
+         */
+        const createScene = function () {
+            const scene = new BABYLON.Scene(engine);
+            scene.clearColor = new BABYLON.Color3(0.1, 0.1, 0.15); // Dark blue-grey background
+
+            // --- Camera Setup ---
+            const camera = new BABYLON.FreeCamera("camera1", new BABYLON.Vector3(0, 1, -3), scene);
+            camera.setTarget(BABYLON.Vector3.Zero());
+            camera.attachControl(canvas, true);
+            camera.speed = 0.1;
+            camera.angularSensibility = 4000;
+            camera.keysUp = [87]; // W
+            camera.keysDown = [83]; // S
+            camera.keysLeft = [65]; // A
+            camera.keysRight = [68]; // D
+
+            // --- Light ---
+            const light = new BABYLON.HemisphericLight("light", new BABYLON.Vector3(0, 1, 0), scene);
+            light.intensity = 1.0;
+            
+            return scene;
+        };
+        
+        /**
+         * Resets user activity timer. Disables attract mode if it's active.
+         */
+        function resetInactivityTimer() {
+            if (isAttractModeActive) {
+                stopAttractMode();
+            }
+            clearTimeout(inactivityTimer);
+            inactivityTimer = setTimeout(startAttractMode, inactivityTimeout);
+        }
+
+        /**
+         * Starts the attract mode (auto-rotation and model switching).
+         */
+        function startAttractMode() {
+            console.log("Starting attract mode due to inactivity.");
+            isAttractModeActive = true;
+            
+            const camera = scene.getCameraByName("camera1");
+            if (camera) {
+                camera.detachControl(canvas);
+                const orbitRadius = 3;
+                const orbitHeight = 1;
+                camera.position = new BABYLON.Vector3(0, orbitHeight, -orbitRadius);
+                camera.setTarget(BABYLON.Vector3.Zero());
+                attractModeAngle = Math.atan2(camera.position.x, camera.position.z);
+
+                scene.beforeRender = function () {
+                    if (isAttractModeActive && camera) {
+                         attractModeAngle += 0.01 * scene.getAnimationRatio();
+                         camera.position.x = orbitRadius * Math.sin(attractModeAngle);
+                         camera.position.z = orbitRadius * Math.cos(attractModeAngle);
+                         camera.setTarget(BABYLON.Vector3.Zero());
+                    }
+                };
+            }
+            
+            modelSwitchIntervalId = setInterval(() => {
+                if (models.length > 1) {
+                    const nextModelIndex = (currentModelIndex + 1) % models.length;
+                    // Update hash to reflect the new model, which will trigger the hashchange listener
+                    window.location.hash = nextModelIndex;
+                }
+            }, modelSwitchInterval);
+        }
+
+        /**
+         * Stops the attract mode and gives control back to the user.
+         */
+        function stopAttractMode() {
+            console.log("Stopping attract mode.");
+            isAttractModeActive = false;
+            clearInterval(modelSwitchIntervalId);
+            const camera = scene.getCameraByName("camera1");
+            if (camera) {
+                 camera.attachControl(canvas, true);
+            }
+            if(scene) {
+                scene.beforeRender = null;
+            }
+        }
+
+        /**
+         * Parses the model index from the URL hash.
+         * @returns {number} The model index to load, or 0 if invalid.
+         */
+        const getModelIndexFromHash = () => {
+            const hash = window.location.hash.substring(1);
+            if (hash) {
+                const parsedIndex = parseInt(hash, 10);
+                if (!isNaN(parsedIndex) && parsedIndex >= 0 && parsedIndex < models.length) {
+                    return parsedIndex;
+                }
+            }
+            return 0; // Default to the first model if hash is invalid or not present
+        };
+        
+        /**
+         * Handles the hashchange event to load a new model.
+         */
+        const handleHashChange = () => {
+            const newModelIndex = getModelIndexFromHash();
+            loadModel(newModelIndex);
+        };
+
+        /**
+         * Main initialization function.
+         */
+        const init = async () => {
+            // Listen for hash changes to switch models.
+            window.addEventListener('hashchange', handleHashChange, false);
+            
+            // Perform the initial model load based on the current hash.
+            handleHashChange();
+
+            // Start the engine's render loop.
+            engine.runRenderLoop(function () {
+                if (scene) {
+                    scene.render();
+                }
+            });
+
+            // Handle window resizing.
+            window.addEventListener("resize", () => engine.resize());
+
+            // Set up inactivity detection.
+            ['mousemove', 'keydown', 'mousedown', 'touchstart'].forEach(event => 
+                window.addEventListener(event, resetInactivityTimer)
+            );
+            resetInactivityTimer(); // Start the timer initially.
+        };
+
+        // Run the initialization function to start the application.
+        init();
+    </script>
+</body>
+</html>

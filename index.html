@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gaussian Splat Dashboard — UMD, Resilient Loader, 2× Closer, 180° Front-Facing</title>
+  <title>Gaussian Splat Dashboard — Smaller Buttons (Back Fixed + WASD Restored)</title>
   <style>
     :root{ --bg:#0b0e11; --accent:#93c5fd; --btn-border:#2a3240; --btn-inset:#00000088; }
     html,body{height:100%;margin:0;background:var(--bg);color:#e5e7eb;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
@@ -13,21 +13,21 @@
     header a{color:var(--accent);text-decoration:none}
 
     /* Thumbnails grid */
-    #grid{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:14px;overflow:auto}
-    .thumb-btn{appearance:none;cursor:pointer;border:1px solid var(--btn-border);border-radius:14px;padding:10px;background:linear-gradient(180deg,#0b0e11,#151a21);
-      box-shadow:inset 0 1px 0 var(--btn-inset), 0 8px 18px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35);
-      transition:transform .08s ease, box-shadow .08s ease; display:flex;flex-direction:column;align-items:center;gap:8px}
-    .thumb-btn:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 var(--btn-inset), 0 12px 22px rgba(0,0,0,.6), 0 3px 8px rgba(0,0,0,.45)}
-    .thumb-btn img{width:100%;aspect-ratio:1;border-radius:10px;background:#000;display:block}
-    .thumb-btn .label{font-weight:600;color:#cbd5e1}
+    #grid{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(70px,1fr));gap:10px;overflow:auto}
+    .thumb-btn{appearance:none;cursor:pointer;border:1px solid var(--btn-border);border-radius:10px;padding:5px;background:linear-gradient(180deg,#0b0e11,#151a21);
+      box-shadow:inset 0 1px 0 var(--btn-inset), 0 4px 9px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.35);
+      transition:transform .08s ease, box-shadow .08s ease; display:flex;flex-direction:column;align-items:center;gap:4px}
+    .thumb-btn:hover{transform:translateY(-1px);box-shadow:inset 0 1px 0 var(--btn-inset),0 6px 11px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.45)}
+    .thumb-btn img{width:100%;aspect-ratio:1;border-radius:6px;background:#000;display:block}
+    .thumb-btn .label{font-weight:600;color:#cbd5e1;font-size:11px;text-align:center}
 
     /* Viewer */
     #viewerWrap{position:relative;height:100%;display:none}
-    #renderCanvas{width:100%;height:100%;display:block;touch-action:none}
+    #renderCanvas{width:100%;height:100%;display:block;touch-action:none;outline:none}
     #hud{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,.55);padding:10px 12px;border-radius:10px;color:#e5e7eb;max-width:60ch}
     #hud .ok{color:#86efac} #hud .err{color:#fca5a5}
-    #backBtn{position:absolute;left:12px;top:12px;appearance:none;border:1px solid var(--btn-border);border-radius:10px;background:linear-gradient(180deg,#0b0e11,#151a21);color:#e5e7eb;padding:8px 10px;cursor:pointer;box-shadow:0 6px 14px rgba(0,0,0,.5)}
-    #title{position:absolute;left:110px;top:16px;color:#cbd5e1}
+    #backBtn{position:absolute;left:12px;top:12px;appearance:none;border:1px solid var(--btn-border);border-radius:10px;background:linear-gradient(180deg,#0b0e11,#151a21);color:#e5e7eb;padding:6px 8px;cursor:pointer;box-shadow:0 4px 8px rgba(0,0,0,.5)}
+    #title{position:absolute;left:90px;top:12px;color:#cbd5e1;font-size:13px}
   </style>
   <noscript style="color:#fff;background:#000;display:block;padding:12px">This page requires JavaScript.</noscript>
 </head>
@@ -39,7 +39,7 @@
     </header>
     <div id="grid" aria-label="Splat thumbnails grid"></div>
     <div id="viewerWrap">
-      <canvas id="renderCanvas" aria-label="Babylon viewer"></canvas>
+      <canvas id="renderCanvas" aria-label="Babylon viewer" tabindex="0"></canvas>
       <button id="backBtn" type="button" title="Back to thumbnails">⟵ Back</button>
       <div id="title"></div>
       <div id="hud">Loading…</div>
@@ -47,57 +47,52 @@
   </div>
 
   <script>
-    // UMD-only (NO import statements) — fixes: "Cannot use import statement outside a module" and opaque "Script error" by adding resilient loader
+    // Resilient UMD-only loader; back button fixed; WASD panning restored and focused
+    const BASE='https://liamyehudai.github.io/spz';
+    const IMG_PATH=BASE+'/img/';
+    const SPZ_PATH=BASE+'/assets/';
+    const TOTAL=32;
+    const NAMES=['Gingerbread','Panda','Car','Chimp','Surfing','Han','Wii','Tire','Whiteboard','Ancient','Atrium','Knit','Wolfie','Orb','Hercules','Grandma','Me','Rocket','Rabbit','Billiards','Soup','Makerspace','Dogs','Rocks','Lars','Picnic','Sculpture','Prints','Vent','Astronaut','Autumn','Octopus'];
 
-    // --------------------------- Constants & Elements ---------------------------
-    const BASE = 'https://liamyehudai.github.io/spz';
-    const IMG_PATH = BASE + '/img/';        // 0.webp..31.webp
-    const SPZ_PATH = BASE + '/assets/';     // 0.spz..31.spz
-    const TOTAL = 32; // 0..31
-    const NAMES=[
-      'Gingerbread','Panda','Car','Chimp','Surfing','Han','Wii','Tire','Whiteboard','Ancient','Atrium','Knit','Wolfie','Orb','Hercules','Grandma','Me','Rocket','Rabbit','Billiards','Soup','Makerspace','Dogs','Rocks','Lars','Picnic','Sculpture','Prints','Vent','Astronaut','Autumn','Octopus'
-    ];
+    const grid=document.getElementById('grid');
+    const viewer=document.getElementById('viewerWrap');
+    const canvas=document.getElementById('renderCanvas');
+    const hud=document.getElementById('hud');
+    const title=document.getElementById('title');
+    const backBtn=document.getElementById('backBtn');
 
-    const gridEl = document.getElementById('grid');
-    const viewerWrap = document.getElementById('viewerWrap');
-    const canvas = document.getElementById('renderCanvas');
-    const hud = document.getElementById('hud');
-    const backBtn = document.getElementById('backBtn');
-    const titleEl = document.getElementById('title');
+    // --- helpers ---
+    function setHUD(html){ if(hud) hud.innerHTML = html; }
 
-    // --------------------------- Thumbnails (3D buttons) ----------------------
     function mkThumb(i){
-      const btn = document.createElement('button'); btn.className = 'thumb-btn'; btn.setAttribute('aria-label','Open splat '+i);
-      const img = document.createElement('img'); img.loading='lazy'; img.decoding='async'; img.alt=NAMES[i]+' thumbnail'; img.src = IMG_PATH + i + '.webp';
-      img.addEventListener('error',()=> console.warn('[TEST] Missing thumbnail', img.src)); // non-fatal test
-      const label = document.createElement('div'); label.className='label'; label.textContent=NAMES[i];
-      btn.appendChild(img); btn.appendChild(label);
-      btn.addEventListener('click',()=> openSplat(i));
-      return btn;
+      const b=document.createElement('button');b.className='thumb-btn';
+      const img=document.createElement('img');img.src=IMG_PATH+i+'.webp';img.alt=NAMES[i]+' thumbnail';
+      img.addEventListener('error',()=>console.warn('[TEST] Missing thumbnail', img.src));
+      b.appendChild(img);
+      const l=document.createElement('div');l.className='label';l.textContent=NAMES[i];b.appendChild(l);
+      b.onclick=()=>openSplat(i);return b;
     }
 
     function renderGrid(){
-      gridEl.innerHTML=''; for(let i=0;i<TOTAL;i++) gridEl.appendChild(mkThumb(i));
-      gridEl.style.display='grid'; viewerWrap.style.display='none';
-      history.replaceState({}, '', location.pathname); // clear query
+      grid.innerHTML='';for(let i=0;i<TOTAL;i++)grid.appendChild(mkThumb(i));
+      grid.style.display='grid';viewer.style.display='none';
+      history.replaceState({}, '', location.pathname);
     }
 
-    function openSplat(i){
-      const q = new URLSearchParams(); q.set('id', i);
-      history.pushState({id:i}, '', '?' + q.toString());
-      loadViewer(i);
-    }
+    function openSplat(i){ history.pushState({id:i},'',`?id=${i}`); loadViewer(i); }
+    window.addEventListener('popstate',()=>{ const id=new URLSearchParams(location.search).get('id'); if(id==null) renderGrid(); else loadViewer(parseInt(id,10)); });
 
-    window.addEventListener('popstate', ()=>{
-      const id = new URLSearchParams(location.search).get('id');
-      if(id==null) renderGrid(); else loadViewer(parseInt(id,10));
+    // ✅ Back button restored
+    backBtn.addEventListener('click', ()=>{
+      history.pushState({}, '', location.pathname); // update URL to home
+      renderGrid();
     });
 
-    // ------------------------ Resilient script loader (UMD) --------------------
-    function loadScript(url){
-      return new Promise((resolve,reject)=>{ const s=document.createElement('script'); s.src=url; s.async=true; s.crossOrigin='anonymous'; s.onload=()=>resolve(url); s.onerror=()=>reject(new Error('Failed '+url)); document.head.appendChild(s); });
+    // --- resilient script loading ---
+    function loadScript(u){
+      return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=u; s.async=true; s.crossOrigin='anonymous'; s.onload=()=>res(u); s.onerror=()=>rej(new Error('Failed '+u)); document.head.appendChild(s); });
     }
-    async function loadAny(urls){ let last; for(const u of urls){ try{ return await loadScript(u);}catch(e){ last=e; } } throw last||new Error('All failed'); }
+    async function loadAny(list){ let last; for(const u of list){ try{ return await loadScript(u);}catch(e){ last=e; } } throw last||new Error('All sources failed'); }
 
     const CDN={
       babylon:[
@@ -116,45 +111,40 @@
       ]
     };
 
-    let engine, scene, camera, root;
-
     async function ensureBabylon(){
       if(window.BABYLON) return;
-      try {
-        hud.innerHTML = '<b>Loading engine…</b>';
-        await loadAny(CDN.babylon);
-        hud.innerHTML = 'Engine ✓. <b>Loading loaders…</b>';
-        await loadAny(CDN.loaders);
-        try{ await loadAny(CDN.splat); }catch(e){ console.warn('SPLAT extra loader failed; continuing if bundled.', e); }
-        hud.innerHTML = 'Loaders ✓. <b>Booting viewer…</b>';
-      } catch (e) {
-        console.error(e);
-        hud.innerHTML = '<span class="err">✗</span> Script load failed. If sandboxed, allow external CDNs or self-host the JS files.';
-        throw e; // stop here to avoid opaque "Script error" later
-      }
+      setHUD('<b>Loading engine…</b>');
+      await loadAny(CDN.babylon);
+      setHUD('Engine ✓. <b>Loading loaders…</b>');
+      await loadAny(CDN.loaders);
+      try{ await loadAny(CDN.splat);}catch(e){ console.warn('SPLAT extra loader failed; continuing if bundled.', e);} 
+      setHUD('Loaders ✓. <b>Booting viewer…</b>');
     }
 
+    let engine,scene,camera,root;
+
     async function bootViewer(){
-      if(engine) return; // already booted
-      engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true });
-      scene = new BABYLON.Scene(engine);
-      scene.clearColor = new BABYLON.Color4(0.03,0.05,0.07,1);
-      camera = new BABYLON.ArcRotateCamera('cam', Math.PI*1.25, Math.PI/2.3, 0.25, BABYLON.Vector3.Zero(), scene);
+      if(engine) return;
+      engine=new BABYLON.Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true,antialias:true});
+      scene=new BABYLON.Scene(engine);
+      scene.clearColor=new BABYLON.Color4(0.03,0.05,0.07,1);
+      camera=new BABYLON.ArcRotateCamera('cam',Math.PI*1.25,Math.PI/2.3,1,BABYLON.Vector3.Zero(),scene);
       camera.attachControl(canvas,true);
       camera.lowerRadiusLimit=0.00005; camera.minZ=0.00005; camera.maxZ=100000; camera.wheelPrecision=18; camera.wheelDeltaPercentage=0.01;
-      new BABYLON.HemisphericLight('h', new BABYLON.Vector3(0,1,0), scene).intensity=0.0;
+      new BABYLON.HemisphericLight('h',new BABYLON.Vector3(0,1,0),scene).intensity=0;
 
-      // Corrected WASD/QE controls (natural directions)
+      // ✅ WASD/QE panning restored (relative to camera view)
       let autoOrbit=false; const keys={w:false,a:false,s:false,d:false,q:false,e:false};
-      window.addEventListener('keydown',(e)=>{ const k=(e.key||'').toLowerCase(); if(k in keys) keys[k]=true; if(e.key==='0') resetView(); if(k==='r') autoOrbit=!autoOrbit; });
-      window.addEventListener('keyup',(e)=>{ const k=(e.key||'').toLowerCase(); if(k in keys) keys[k]=false; });
+      function setKey(k,down){ if(k in keys){ keys[k]=down; } }
+      window.addEventListener('keydown',(e)=>{ const k=(e.key||'').toLowerCase(); setKey(k,true); if(e.key==='0') resetView(); if(k==='r') autoOrbit=!autoOrbit; });
+      window.addEventListener('keyup',(e)=>{ const k=(e.key||'').toLowerCase(); setKey(k,false); });
+
       const speed=0.8; let last=performance.now();
       scene.onBeforeRenderObservable.add(()=>{
         const now=performance.now(); const dt=(now-last)/1000; last=now;
         let f=camera.target.subtract(camera.position); f.y=0; if(f.lengthSquared()<1e-8){ f=new BABYLON.Vector3(Math.cos(camera.alpha),0,Math.sin(camera.alpha)); } f.normalize();
         let rgt=new BABYLON.Vector3(f.z,0,-f.x); rgt.normalize();
-        let delta=BABYLON.Vector3.Zero();
-        const v = speed*dt*Math.max(0.1,camera.radius);
+        let delta=BABYLON.Vector3.Zero(); const v=speed*dt*Math.max(0.1,camera.radius);
         if(keys.w) delta=delta.add(f.scale(v));
         if(keys.s) delta=delta.subtract(f.scale(v));
         if(keys.a) delta=delta.subtract(rgt.scale(v));
@@ -166,67 +156,60 @@
       });
 
       engine.setHardwareScalingLevel(window.devicePixelRatio>1 ? 1/window.devicePixelRatio : 1);
-      engine.runRenderLoop(()=> scene.render());
-      window.addEventListener('resize',()=> engine.resize());
+      engine.runRenderLoop(()=>scene.render());
+      window.addEventListener('resize',()=>engine.resize());
+
+      // Tests
+      console.assert(canvas instanceof HTMLCanvasElement,'[TEST] Canvas exists');
+      console.assert(!!engine&&!!scene,'[TEST] Engine/Scene created');
+      console.assert(scene.activeCamera instanceof BABYLON.ArcRotateCamera,'[TEST] Camera is ArcRotate');
     }
 
-    function resetView(){
-      camera.setPosition(new BABYLON.Vector3(1.6,0.8,-1.6));
-      camera.target.copyFromFloats(0,0,0);
-      // radius is recomputed per splat load; here we leave current close radius
-      camera.alpha=Math.PI*1.25; camera.beta=Math.PI/2.6;
-    }
+    function resetView(){ camera.setPosition(new BABYLON.Vector3(1.6,0.8,-1.6)); camera.target.copyFromFloats(0,0,0); camera.alpha=Math.PI*1.25; camera.beta=Math.PI/2.6; }
 
-    // ------------------------------ Load a splat -------------------------------
     async function loadViewer(i){
-      const idx = Number(i);
-      titleEl.textContent = NAMES[idx] + ' — ('+idx+'.spz)';
-      gridEl.style.display='none'; viewerWrap.style.display='block';
-      await ensureBabylon(); await bootViewer();
-      hud.innerHTML = 'Loading splat '+idx+'…';
+      const idx=Number(i);
+      grid.style.display='none'; viewer.style.display='block';
+      try{ await ensureBabylon(); }catch(e){ setHUD("<span class='err'>✗</span> Script load failed. If sandboxed, allow external CDNs or self-host Babylon."); return; }
+      await bootViewer();
 
-      const url = SPZ_PATH + idx + '.spz';
+      // Ensure canvas receives keyboard focus for WASD
+      setTimeout(()=>{ try{ canvas.focus(); }catch(_){} }, 0);
+
+      setHUD('Loading '+NAMES[idx]+'…');
+
+      const url=SPZ_PATH+idx+'.spz';
       try{ const head=await fetch(url,{method:'HEAD'}); console.assert(head.ok,'[TEST] SPZ reachable: '+url); }catch(e){ console.warn('[TEST] HEAD failed for', url, e); }
 
-      // Dispose prior root & meshes if any
       if(root){ root.getChildMeshes().forEach(m=>m.dispose()); root.dispose(); }
-      root = new BABYLON.TransformNode('root', scene);
+      root=new BABYLON.TransformNode('root',scene);
 
       let result;
-      try{ result = await BABYLON.SceneLoader.ImportMeshAsync('', SPZ_PATH, idx + '.spz', scene); }
-      catch(e){ console.error(e); hud.innerHTML = '<span class="err">✗</span> Failed to load '+url; return; }
+      try{ result=await BABYLON.SceneLoader.ImportMeshAsync('',SPZ_PATH,idx+'.spz',scene); }
+      catch(e){ console.error(e); setHUD("<span class='err'>✗</span> Failed to load "+url); return; }
 
-      const meshes = (result && result.meshes) || [];
-
-      // ---- Runtime tests (keep unless clearly wrong) ----
-      console.assert(canvas instanceof HTMLCanvasElement,'[TEST] Canvas exists');
-      console.assert(!!engine && !!scene,'[TEST] Engine/Scene created');
+      const meshes=result.meshes||[];
       console.assert(meshes.length>0,'[TEST] Meshes loaded for '+idx);
-      console.assert(scene.activeCamera instanceof BABYLON.ArcRotateCamera,'[TEST] Camera is ArcRotate');
 
-      // Parent, center, upright + front-facing rotation
-      let min=new BABYLON.Vector3(+Infinity,+Infinity,+Infinity); let max=new BABYLON.Vector3(-Infinity,-Infinity,-Infinity);
-      for(const m of meshes){ if(m.getBoundingInfo){ const bi=m.getBoundingInfo(); min=BABYLON.Vector3.Minimize(min, bi.boundingBox.minimumWorld); max=BABYLON.Vector3.Maximize(max, bi.boundingBox.maximumWorld);} m.parent=root; }
+      // center & orient
+      let min=new BABYLON.Vector3(+Infinity,+Infinity,+Infinity),max=new BABYLON.Vector3(-Infinity,-Infinity,-Infinity);
+      for(const m of meshes){ if(m.getBoundingInfo){ const bi=m.getBoundingInfo(); min=BABYLON.Vector3.Minimize(min,bi.boundingBox.minimumWorld); max=BABYLON.Vector3.Maximize(max,bi.boundingBox.maximumWorld);} m.parent=root; }
       const center=min.add(max).scale(0.5); root.position=center.scale(-1);
       root.rotation.x=Math.PI; // upright
-      root.rotation.y=Math.PI; // 180° turn so front faces camera by default
+      root.rotation.y=Math.PI; // face camera
       console.assert(Math.abs(root.rotation.x-Math.PI)<1e-6,'[TEST] Upright flip X=pi');
       console.assert(Math.abs(root.rotation.y-Math.PI)<1e-6,'[TEST] Y rotation 180° applied');
 
-      // 2× closer than previous default: factor 0.02 → 0.01
-      const bboxLen=max.subtract(min).length();
-      const closeRadius=Math.max(0.00005, bboxLen*0.01);
-      camera.radius = closeRadius; camera.target = BABYLON.Vector3.Zero(); camera.beta = Math.PI/2.6;
-
-      hud.innerHTML = '<span class="ok">✓</span> Loaded <b>'+NAMES[idx]+' ('+idx+'.spz)</b>. Use mouse + WASD/QE. Press <b>0</b> to reset.';
+      // 2× closer default
+      const bbox=max.subtract(min).length();
+      const closeRadius=Math.max(0.00005,bbox*0.01);
+      camera.radius=closeRadius; camera.target=BABYLON.Vector3.Zero(); camera.beta=Math.PI/2.6;
+      setHUD(`<span class='ok'>✓</span> Loaded <b>${NAMES[idx]} (${idx}.spz)</b>. Use mouse (orbit/MMB pan/scroll) + WASD/QE. R=auto‑orbit, 0=reset.`);
     }
 
-    backBtn.addEventListener('click', ()=> renderGrid());
-
-    // ------------------------------ Initial route -----------------------------
     (function init(){
-      const q = new URLSearchParams(location.search); const id = q.get('id');
-      if(id==null){ renderGrid(); } else { const n=parseInt(id,10); if(Number.isFinite(n) && n>=0 && n<TOTAL) loadViewer(n); else renderGrid(); }
+      const id=new URLSearchParams(location.search).get('id');
+      if(id==null) renderGrid(); else loadViewer(id);
     })();
   </script>
 </body>

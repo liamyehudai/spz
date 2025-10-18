@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Gaussian Splat Dashboard — UMD Only, Resilient Loader, 2× Closer, 180° Front-Facing</title>
+  <title>Gaussian Splat Dashboard — UMD, Resilient Loader, 2× Closer, 180° Front-Facing</title>
   <style>
     :root{ --bg:#0b0e11; --accent:#93c5fd; --btn-border:#2a3240; --btn-inset:#00000088; }
     html,body{height:100%;margin:0;background:var(--bg);color:#e5e7eb;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
@@ -18,9 +18,7 @@
       box-shadow:inset 0 1px 0 var(--btn-inset), 0 8px 18px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.35);
       transition:transform .08s ease, box-shadow .08s ease; display:flex;flex-direction:column;align-items:center;gap:8px}
     .thumb-btn:hover{transform:translateY(-2px);box-shadow:inset 0 1px 0 var(--btn-inset), 0 12px 22px rgba(0,0,0,.6), 0 3px 8px rgba(0,0,0,.45)}
-    .thumb-wrap{position:relative;width:100%}
     .thumb-btn img{width:100%;aspect-ratio:1;border-radius:10px;background:#000;display:block}
-    .thumb-idx{position:absolute;left:8px;top:8px;background:rgba(0,0,0,.6);border:1px solid #334155;border-radius:8px;padding:2px 6px;font-weight:700;font-size:12px}
     .thumb-btn .label{font-weight:600;color:#cbd5e1}
 
     /* Viewer */
@@ -49,12 +47,16 @@
   </div>
 
   <script>
-    // UMD-only (NO import statements) to avoid: "Cannot use import statement outside a module"
+    // UMD-only (NO import statements) — fixes: "Cannot use import statement outside a module" and opaque "Script error" by adding resilient loader
+
     // --------------------------- Constants & Elements ---------------------------
     const BASE = 'https://liamyehudai.github.io/spz';
     const IMG_PATH = BASE + '/img/';        // 0.webp..31.webp
     const SPZ_PATH = BASE + '/assets/';     // 0.spz..31.spz
     const TOTAL = 32; // 0..31
+    const NAMES=[
+      'Gingerbread','Panda','Car','Chimp','Surfing','Han','Wii','Tire','Whiteboard','Ancient','Atrium','Knit','Wolfie','Orb','Hercules','Grandma','Me','Rocket','Rabbit','Billiards','Soup','Makerspace','Dogs','Rocks','Lars','Picnic','Sculpture','Prints','Vent','Astronaut','Autumn','Octopus'
+    ];
 
     const gridEl = document.getElementById('grid');
     const viewerWrap = document.getElementById('viewerWrap');
@@ -66,15 +68,11 @@
     // --------------------------- Thumbnails (3D buttons) ----------------------
     function mkThumb(i){
       const btn = document.createElement('button'); btn.className = 'thumb-btn'; btn.setAttribute('aria-label','Open splat '+i);
-      const wrap = document.createElement('div'); wrap.className = 'thumb-wrap';
-      const img = document.createElement('img'); img.loading='lazy'; img.decoding='async'; img.alt='Splat '+i+' thumbnail'; img.src = IMG_PATH + i + '.webp';
-      const idx = document.createElement('div'); idx.className='thumb-idx'; idx.textContent = i;
-      wrap.appendChild(img); wrap.appendChild(idx);
-      const label = document.createElement('div'); label.className='label'; label.textContent='Splat '+i;
-      btn.appendChild(wrap); btn.appendChild(label);
+      const img = document.createElement('img'); img.loading='lazy'; img.decoding='async'; img.alt=NAMES[i]+' thumbnail'; img.src = IMG_PATH + i + '.webp';
+      img.addEventListener('error',()=> console.warn('[TEST] Missing thumbnail', img.src)); // non-fatal test
+      const label = document.createElement('div'); label.className='label'; label.textContent=NAMES[i];
+      btn.appendChild(img); btn.appendChild(label);
       btn.addEventListener('click',()=> openSplat(i));
-      // [TEST] image reachable (non-fatal)
-      img.addEventListener('error',()=> console.warn('[TEST] Missing thumbnail', img.src));
       return btn;
     }
 
@@ -132,7 +130,7 @@
       } catch (e) {
         console.error(e);
         hud.innerHTML = '<span class="err">✗</span> Script load failed. If sandboxed, allow external CDNs or self-host the JS files.';
-        throw e;
+        throw e; // stop here to avoid opaque "Script error" later
       }
     }
 
@@ -159,7 +157,7 @@
         const v = speed*dt*Math.max(0.1,camera.radius);
         if(keys.w) delta=delta.add(f.scale(v));
         if(keys.s) delta=delta.subtract(f.scale(v));
-        ifkeys_a: if(keys.a) delta=delta.subtract(rgt.scale(v));
+        if(keys.a) delta=delta.subtract(rgt.scale(v));
         if(keys.d) delta=delta.add(rgt.scale(v));
         if(keys.q) delta=delta.add(new BABYLON.Vector3(0, v, 0));
         if(keys.e) delta=delta.add(new BABYLON.Vector3(0,-v, 0));
@@ -172,10 +170,17 @@
       window.addEventListener('resize',()=> engine.resize());
     }
 
+    function resetView(){
+      camera.setPosition(new BABYLON.Vector3(1.6,0.8,-1.6));
+      camera.target.copyFromFloats(0,0,0);
+      // radius is recomputed per splat load; here we leave current close radius
+      camera.alpha=Math.PI*1.25; camera.beta=Math.PI/2.6;
+    }
+
     // ------------------------------ Load a splat -------------------------------
     async function loadViewer(i){
       const idx = Number(i);
-      titleEl.textContent = 'Viewing splat '+idx;
+      titleEl.textContent = NAMES[idx] + ' — ('+idx+'.spz)';
       gridEl.style.display='none'; viewerWrap.style.display='block';
       await ensureBabylon(); await bootViewer();
       hud.innerHTML = 'Loading splat '+idx+'…';
@@ -193,7 +198,7 @@
 
       const meshes = (result && result.meshes) || [];
 
-      // ---- Runtime tests (do not remove unless clearly wrong) ----
+      // ---- Runtime tests (keep unless clearly wrong) ----
       console.assert(canvas instanceof HTMLCanvasElement,'[TEST] Canvas exists');
       console.assert(!!engine && !!scene,'[TEST] Engine/Scene created');
       console.assert(meshes.length>0,'[TEST] Meshes loaded for '+idx);
@@ -213,7 +218,7 @@
       const closeRadius=Math.max(0.00005, bboxLen*0.01);
       camera.radius = closeRadius; camera.target = BABYLON.Vector3.Zero(); camera.beta = Math.PI/2.6;
 
-      hud.innerHTML = '<span class="ok">✓</span> Loaded <b>'+idx+'.spz</b>. Use mouse + WASD/QE. Press <b>0</b> to reset.';
+      hud.innerHTML = '<span class="ok">✓</span> Loaded <b>'+NAMES[idx]+' ('+idx+'.spz)</b>. Use mouse + WASD/QE. Press <b>0</b> to reset.';
     }
 
     backBtn.addEventListener('click', ()=> renderGrid());

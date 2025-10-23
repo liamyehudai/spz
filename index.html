@@ -1,41 +1,176 @@
 <!doctype html>
 <html lang="en">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Gaussian Splat Dashboard — Small Buttons (Height Fixed, Back+WASD OK)</title>
   <style>
-    :root{ --bg:#0b0e11; --accent:#93c5fd; --btn-border:#2a3240; --btn-inset:#00000088; --thumb:70px; }
-    html,body{height:100%;margin:0;background:var(--bg);color:#e5e7eb;font:14px/1.4 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial}
-    #app{height:100%;display:grid;grid-template-rows:auto 1fr;min-height:0}
-    header{display:flex;gap:8px;align-items:center;padding:10px 12px;border-bottom:1px solid #1f2937;background:linear-gradient(180deg,#0c1117,#0a0d12)}
-    header h1{font-size:15px;margin:0;color:#cbd5e1}
-    header a{color:var(--accent);text-decoration:none}
+    :root {
+      --bg: #0b0e11;
+      --accent: #93c5fd;
+      --btn-border: #2a3240;
+      --btn-inset: #00000088;
+      --thumb: 70px;
+    }
+
+    html,
+    body {
+      height: 100%;
+      margin: 0;
+      background: var(--bg);
+      color: #e5e7eb;
+      font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial
+    }
+
+    #app {
+      height: 100%;
+      display: grid;
+      grid-template-rows: auto 1fr;
+      min-height: 0
+    }
+
+    header {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 10px 12px;
+      border-bottom: 1px solid #1f2937;
+      background: linear-gradient(180deg, #0c1117, #0a0d12)
+    }
+
+    header h1 {
+      font-size: 15px;
+      margin: 0;
+      color: #cbd5e1
+    }
+
+    header a {
+      color: var(--accent);
+      text-decoration: none
+    }
 
     /* Thumbnails grid */
-    #grid{padding:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(var(--thumb),1fr));gap:10px;overflow:auto;align-items:start;align-content:start}
-    .thumb-btn{appearance:none;cursor:pointer;border:1px solid var(--btn-border);border-radius:10px;padding:6px;background:linear-gradient(180deg,#0b0e11,#151a21);
-      box-shadow:inset 0 1px 0 var(--btn-inset), 0 4px 9px rgba(0,0,0,.5), 0 1px 3px rgba(0,0,0,.35);
-      transition:transform .08s ease, box-shadow .08s ease; display:flex;flex-direction:column;align-items:stretch;gap:6px;
-      height:auto;/* ensure content-height only */
+    #grid {
+      padding: 16px;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(var(--thumb), 1fr));
+      gap: 10px;
+      overflow: auto;
+      align-items: start;
+      align-content: start
     }
-    .thumb-btn:hover{transform:translateY(-1px);box-shadow:inset 0 1px 0 var(--btn-inset),0 6px 11px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.45)}
+
+    .thumb-btn {
+      appearance: none;
+      cursor: pointer;
+      border: 1px solid var(--btn-border);
+      border-radius: 10px;
+      padding: 6px;
+      background: linear-gradient(180deg, #0b0e11, #151a21);
+      box-shadow: inset 0 1px 0 var(--btn-inset), 0 4px 9px rgba(0, 0, 0, .5), 0 1px 3px rgba(0, 0, 0, .35);
+      transition: transform .08s ease, box-shadow .08s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 6px;
+      height: auto;
+      /* ensure content-height only */
+    }
+
+    .thumb-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: inset 0 1px 0 var(--btn-inset), 0 6px 11px rgba(0, 0, 0, .6), 0 2px 4px rgba(0, 0, 0, .45)
+    }
 
     /* Square thumbnail with robust fallback (works even without aspect-ratio support) */
-    .thumb-sizer{position:relative;width:100%;/* square via padding */padding-top:100%;border-radius:6px;background:#000;overflow:hidden}
-    .thumb-sizer > img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;display:block}
+    .thumb-sizer {
+      position: relative;
+      width: 100%;
+      /* square via padding */
+      padding-top: 100%;
+      border-radius: 6px;
+      background: #000;
+      overflow: hidden
+    }
 
-    .label{font-weight:600;color:#cbd5e1;font-size:11px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .thumb-sizer>img {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block
+    }
+
+    .label {
+      font-weight: 600;
+      color: #cbd5e1;
+      font-size: 11px;
+      text-align: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis
+    }
 
     /* Viewer */
-    #viewerWrap{position:relative;height:100%;display:none}
-    #renderCanvas{width:100%;height:100%;display:block;touch-action:none;outline:none}
-    #hud{position:absolute;left:12px;bottom:12px;background:rgba(0,0,0,.55);padding:10px 12px;border-radius:10px;color:#e5e7eb;max-width:60ch}
-    #hud .ok{color:#86efac} #hud .err{color:#fca5a5}
-    #backBtn{position:absolute;left:12px;top:12px;appearance:none;border:1px solid var(--btn-border);border-radius:10px;background:linear-gradient(180deg,#0b0e11,#151a21);color:#e5e7eb;padding:6px 8px;cursor:pointer;box-shadow:0 4px 8px rgba(0,0,0,.5)}
-    #title{position:absolute;left:90px;top:12px;color:#cbd5e1;font-size:13px}
+    #viewerWrap {
+      position: relative;
+      height: 100%;
+      display: none
+    }
+
+    #renderCanvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      touch-action: none;
+      outline: none
+    }
+
+    #hud {
+      position: absolute;
+      left: 12px;
+      bottom: 12px;
+      background: rgba(0, 0, 0, .55);
+      padding: 10px 12px;
+      border-radius: 10px;
+      color: #e5e7eb;
+      max-width: 60ch
+    }
+
+    #hud .ok {
+      color: #86efac
+    }
+
+    #hud .err {
+      color: #fca5a5
+    }
+
+    #backBtn {
+      position: absolute;
+      left: 12px;
+      top: 12px;
+      appearance: none;
+      border: 1px solid var(--btn-border);
+      border-radius: 10px;
+      background: linear-gradient(180deg, #0b0e11, #151a21);
+      color: #e5e7eb;
+      padding: 6px 8px;
+      cursor: pointer;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, .5)
+    }
+
+    #title {
+      position: absolute;
+      left: 90px;
+      top: 12px;
+      color: #cbd5e1;
+      font-size: 13px
+    }
   </style>
 </head>
+
 <body>
   <div id="app">
     <header>
@@ -53,160 +188,244 @@
 
   <script>
     // Revert to dashboard + fix button height, keep Back + WASD/QE and all viewer behaviors
-    const BASE='https://liamyehudai.github.io/spz';
-    const IMG_PATH=BASE+'/img/';
-    const SPZ_PATH=BASE+'/assets/';
-    const TOTAL=32;
-    const NAMES=['Gingerbread','Panda','Car','Chimp','Surfing','Han','Wii','Tire','Whiteboard','Ancient','Atrium','Knit','Wolfie','Orb','Hercules','Grandma','Me','Rocket','Rabbit','Billiards','Soup','Makerspace','Dogs','Rocks','Lars','Picnic','Sculpture','Prints','Vent','Astronaut','Autumn','Octopus'];
+    const BASE = 'https://liamyehudai.github.io/spz';
+    const IMG_PATH = BASE + '/img/';
+    const SPZ_PATH = BASE + '/assets/';
+    const TOTAL = 32;
+    const NAMES = ['Gingerbread', 'Panda', 'Car', 'Chimp', 'Surfing', 'Han', 'Wii', 'Tire', 'Whiteboard', 'Ancient', 'Atrium', 'Knit', 'Wolfie', 'Orb', 'Hercules', 'Grandma', 'Me', 'Rocket', 'Rabbit', 'Billiards', 'Soup', 'Makerspace', 'Dogs', 'Rocks', 'Lars', 'Picnic', 'Sculpture', 'Prints', 'Vent', 'Astronaut', 'Autumn', 'Octopus'];
 
-    const grid=document.getElementById('grid');
-    const viewer=document.getElementById('viewerWrap');
-    const canvas=document.getElementById('renderCanvas');
-    const hud=document.getElementById('hud');
-    const title=document.getElementById('title');
-    const backBtn=document.getElementById('backBtn');
+    const grid = document.getElementById('grid');
+    const viewer = document.getElementById('viewerWrap');
+    const canvas = document.getElementById('renderCanvas');
+    const hud = document.getElementById('hud');
+    const title = document.getElementById('title');
+    const backBtn = document.getElementById('backBtn');
 
-    function setHUD(html){ hud.innerHTML = html; }
+    const keyMappings = {
+      // Number keys (1-9 and 0 for the first 10)
+      '1': 0,   // '1' key -> Thumbnail 0 (Gingerbread)
+      '2': 1,   // '2' key -> Thumbnail 1 (Panda)
+      '3': 2,   // '3' key -> Thumbnail 2 (Car)
+      '4': 3,   // '4' key -> Thumbnail 3 (Chimp)
+      '5': 4,   // '5' key -> Thumbnail 4 (Surfing)
+      '6': 5,  // '6' key -> Thumbnail 5 (Han)
+      '7': 6,   // '7' key -> Thumbnail 6 (Wii)
+      '8': 7,   // '8' key -> Thumbnail 7 (Tire)
+      '9': 8,   // '9' key -> Thumbnail 8 (Whiteboard)
+      '0': 9,   // '0' key -> Thumbnail 9 (Ancient)
+
+      // Function keys F1 to F12 for the next 12 thumbnails
+      'F1': 10,  // F1 key -> Thumbnail 10 (Atrium)
+      'F2': 11,  // F2 key -> Thumbnail 11 (Knit)
+      'F3': 12,  // F3 key -> Thumbnail 12 (Wolfie)
+      'F4': 13,  // F4 key -> Thumbnail 13 (Orb)
+      'F5': 14,  // F5 key -> Thumbnail 14 (Hercules)
+      'F6': 15,  // F6 key -> Thumbnail 15 (Grandma)
+      'F7': 16,  // F7 key -> Thumbnail 16 (Me)
+      'F8': 17,  // F8 key -> Thumbnail 17 (Rocket)
+      'F9': 18,  // F9 ke2y -> Thumbnail 18 (Rabbit)
+      'F10': 19, // F10 key -> Thumbnail 19 (Billiards)
+      'F11': 20, // F11 key -> Thumbnail 20 (Soup)
+      'Shift+F1': 21, // Shift+F1 -> Thumbnail 21 (Makerspace)
+
+      // More function keys F13 to F16 for the remaining 4 thumbnails
+      'Shift+F2': 22,  // Shift+F2 -> Thumbnail 22 (Dogs)
+      'Shift+F3': 23,  // Shift+F3 -> Thumbnail 23 (Rocks)
+      'Shift+F4': 24,  // Shift+F4 -> Thumbnail 24 (Lars)
+      'Shift+F5': 25,  // Shift+F5 -> Thumbnail 25 (Picnic)
+
+      // Additional function keys for the last set of thumbnails
+      'Shift+F6': 26,  // Shift+F6 -> Thumbnail 26 (Sculpture)
+      'Shift+F7': 27,  // Shift+F7 -> Thumbnail 27 (Prints)
+      'Shift+F8': 28,  // Shift+F8 -> Thumbnail 28 (Vent)
+      'Shift+F9': 29,  // Shift+F9 -> Thumbnail 29 (Astronaut)
+      'Shift+F10': 30,  // Shift+F10 -> Thumbnail 30 (Autumn)
+      'Shift+F11': 31,  // Shift+F11 -> Thumbnail 31 (Octopus)
+    };
+
+
+    function setHUD(html) { hud.innerHTML = html; }
 
     // ---- Thumbnails (fixed-height buttons) ----
-    function mkThumb(i){
-      const b=document.createElement('button'); b.className='thumb-btn'; b.setAttribute('aria-label','Open '+NAMES[i]);
-      const s=document.createElement('div'); s.className='thumb-sizer';
-      const img=document.createElement('img'); img.src=IMG_PATH+i+'.webp'; img.alt=NAMES[i]+' thumbnail'; s.appendChild(img);
-      const l=document.createElement('div'); l.className='label'; l.textContent=NAMES[i];
+    function mkThumb(i) {
+      const b = document.createElement('button'); b.className = 'thumb-btn'; b.setAttribute('aria-label', 'Open ' + NAMES[i]);
+      const s = document.createElement('div'); s.className = 'thumb-sizer';
+      const img = document.createElement('img'); img.src = IMG_PATH + i + '.webp'; img.alt = NAMES[i] + ' thumbnail'; s.appendChild(img);
+      const l = document.createElement('div'); l.className = 'label'; l.textContent = NAMES[i];
       b.appendChild(s); b.appendChild(l);
-      b.onclick=()=>openSplat(i);
-      img.addEventListener('error',()=>console.warn('[TEST] Missing thumbnail', img.src));
+      b.onclick = () => openSplat(i);
+      img.addEventListener('error', () => console.warn('[TEST] Missing thumbnail', img.src));
       return b;
     }
 
-    function renderGrid(){
-      grid.innerHTML=''; for(let i=0;i<TOTAL;i++) grid.appendChild(mkThumb(i));
-      grid.style.display='grid'; viewer.style.display='none';
+    function renderGrid() {
+      grid.innerHTML = ''; for (let i = 0; i < TOTAL; i++) grid.appendChild(mkThumb(i));
+      grid.style.display = 'grid'; viewer.style.display = 'none';
       history.replaceState({}, '', location.pathname);
+
+      if (engine) engine.stopRenderLoop();
     }
 
-    function openSplat(i){ history.pushState({id:i},'',`?id=${i}`); loadViewer(i); }
-    window.addEventListener('popstate',()=>{ const id=new URLSearchParams(location.search).get('id'); if(id==null) renderGrid(); else loadViewer(parseInt(id,10)); });
+    window.addEventListener('keydown', (e) => {
+      let keyCombination = e.key;  // Start by getting the key name
 
-    backBtn.addEventListener('click', ()=>{ history.pushState({}, '', location.pathname); renderGrid(); });
+      console.log("Key pressed: ", keyCombination);
+
+      // Check for modifier keys (Shift, Ctrl, Alt) and build the key combination string
+      const isShift = e.shiftKey ? 'Shift+' : '';
+      const isCtrl = e.ctrlKey ? 'Ctrl+' : '';
+      const isAlt = e.altKey ? 'Alt+' : '';
+
+      // Combine modifiers with the key
+      keyCombination = `${isShift}${isCtrl}${isAlt}${keyCombination}`;
+
+      console.log("Key combination: ", keyCombination);
+
+      // Ensure the combination is in the keyMappings object
+      if (keyMappings[keyCombination] !== undefined) {
+        const thumbnailIndex = keyMappings[keyCombination];
+        console.log("Thumbnail index: ", thumbnailIndex);
+        console.log(`Key "${keyCombination}" pressed, opening thumbnail ${thumbnailIndex}`);
+
+        // Call your function to open the thumbnail
+        openSplat(thumbnailIndex);
+      }
+    });
+
+    function openSplat(i) { console.log(`Opening Thumbnail ${i}`); loadViewer(i); }
+    // window.addEventListener('popstate',()=>{ const id=new URLSearchParams(location.search).get('id'); if(id==null) renderGrid(); else loadViewer(parseInt(id,10)); });
+
+    backBtn.addEventListener('click', () => { renderGrid(); });
+
 
     // ---- Resilient UMD script loader ----
-    function loadScript(u){ return new Promise((res,rej)=>{ const s=document.createElement('script'); s.src=u; s.async=true; s.crossOrigin='anonymous'; s.onload=()=>res(u); s.onerror=()=>rej(new Error('Failed '+u)); document.head.appendChild(s); }); }
-    async function loadAny(list){ let last; for(const u of list){ try{ return await loadScript(u);}catch(e){ last=e; } } throw last||new Error('All sources failed'); }
+    function loadScript(u) { return new Promise((res, rej) => { const s = document.createElement('script'); s.src = u; s.async = true; s.crossOrigin = 'anonymous'; s.onload = () => res(u); s.onerror = () => rej(new Error('Failed ' + u)); document.head.appendChild(s); }); }
+    async function loadAny(list) { let last; for (const u of list) { try { return await loadScript(u); } catch (e) { last = e; } } throw last || new Error('All sources failed'); }
 
-    const CDN={
-      babylon:[
+    const CDN = {
+      babylon: [
         'https://cdn.jsdelivr.net/npm/babylonjs@8.1.1/babylon.min.js',
         'https://unpkg.com/babylonjs@8.1.1/babylon.min.js',
         'https://cdnjs.cloudflare.com/ajax/libs/babylonjs/8.1.1/babylon.min.js'
       ],
-      loaders:[
+      loaders: [
         'https://cdn.jsdelivr.net/npm/babylonjs-loaders@8.1.1/babylonjs.loaders.min.js',
         'https://unpkg.com/babylonjs-loaders@8.1.1/babylonjs.loaders.min.js',
         'https://cdnjs.cloudflare.com/ajax/libs/babylonjs/8.1.1/babylonjs.loaders.min.js'
       ],
-      splat:[
+      splat: [
         'https://cdn.jsdelivr.net/npm/@babylonjs/loaders@8.1.1/SPLAT/splatFileLoader.min.js',
         'https://unpkg.com/@babylonjs/loaders@8.1.1/SPLAT/splatFileLoader.min.js'
       ]
     };
 
-    let engine,scene,camera,root;
+    let engine, scene, camera, root;
 
-    async function ensureBabylon(){
-      if(window.BABYLON) return;
+    async function ensureBabylon() {
+      if (window.BABYLON) return;
       setHUD('<b>Loading engine…</b>');
       await loadAny(CDN.babylon);
       setHUD('Engine ✓. <b>Loading loaders…</b>');
       await loadAny(CDN.loaders);
-      try{ await loadAny(CDN.splat);}catch(e){ console.warn('SPLAT extra loader failed; continuing if bundled.', e);} 
+      try { await loadAny(CDN.splat); } catch (e) { console.warn('SPLAT extra loader failed; continuing if bundled.', e); }
       setHUD('Loaders ✓. <b>Booting viewer…</b>');
     }
 
-    async function bootViewer(){
-      if(engine) return;
-      engine=new BABYLON.Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true,antialias:true});
-      scene=new BABYLON.Scene(engine);
-      scene.clearColor=new BABYLON.Color4(0.03,0.05,0.07,1);
-      camera=new BABYLON.ArcRotateCamera('cam',Math.PI*1.25,Math.PI/2.3,1,BABYLON.Vector3.Zero(),scene);
-      camera.attachControl(canvas,true);
-      camera.lowerRadiusLimit=0.00005; camera.minZ=0.00005; camera.maxZ=100000; camera.wheelPrecision=18; camera.wheelDeltaPercentage=0.01;
-      new BABYLON.HemisphericLight('h',new BABYLON.Vector3(0,1,0),scene).intensity=0;
+    async function bootViewer() {
+      if (engine) return;
+      engine = new BABYLON.Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, antialias: true });
+      if (scene) {
+        scene.dispose();
+        engine.stopRenderLoop();
+      }
+      scene = new BABYLON.Scene(engine);
+      scene.clearColor = new BABYLON.Color4(0.03, 0.05, 0.07, 1);
+      camera = new BABYLON.ArcRotateCamera('cam', Math.PI * 1.25, Math.PI / 2.3, 1, BABYLON.Vector3.Zero(), scene);
+      camera.attachControl(canvas, true);
+      camera.lowerRadiusLimit = 0.00005; camera.minZ = 0.00005; camera.maxZ = 100000; camera.wheelPrecision = 18; camera.wheelDeltaPercentage = 0.01;
+      new BABYLON.HemisphericLight('h', new BABYLON.Vector3(0, 1, 0), scene).intensity = 0;
 
       // WASD/QE pan (relative to camera forward/right)
-      let autoOrbit=false; const keys={w:false,a:false,s:false,d:false,q:false,e:false};
-      function setKey(k,down){ if(k in keys) keys[k]=down; }
-      window.addEventListener('keydown',(e)=>{ const k=(e.key||'').toLowerCase(); setKey(k,true); if(e.key==='0') resetView(); if(k==='r') autoOrbit=!autoOrbit; });
-      window.addEventListener('keyup',(e)=>{ const k=(e.key||'').toLowerCase(); setKey(k,false); });
+      let autoOrbit = false; const keys = { w: false, a: false, s: false, d: false, q: false, e: false };
+      function setKey(k, down) { if (k in keys) keys[k] = down; }
+      window.addEventListener('keydown', (e) => { const k = (e.key || '').toLowerCase(); setKey(k, true); if (e.key === '0') resetView(); if (k === 'r') autoOrbit = !autoOrbit; });
+      window.addEventListener('keyup', (e) => { const k = (e.key || '').toLowerCase(); setKey(k, false); });
 
-      const speed=0.8; let last=performance.now();
-      scene.onBeforeRenderObservable.add(()=>{
-        const now=performance.now(); const dt=(now-last)/1000; last=now;
-        let f=camera.target.subtract(camera.position); f.y=0; if(f.lengthSquared()<1e-8){ f=new BABYLON.Vector3(Math.cos(camera.alpha),0,Math.sin(camera.alpha)); } f.normalize();
-        let rgt=new BABYLON.Vector3(f.z,0,-f.x); rgt.normalize();
-        let delta=BABYLON.Vector3.Zero(); const v=speed*dt*Math.max(0.1,camera.radius);
-        if(keys.w) delta=delta.add(f.scale(v));
-        if(keys.s) delta=delta.subtract(f.scale(v));
-        if(keys.a) delta=delta.subtract(rgt.scale(v));
-        if(keys.d) delta=delta.add(rgt.scale(v));
-        if(keys.q) delta=delta.add(new BABYLON.Vector3(0, v, 0));
-        if(keys.e) delta=delta.add(new BABYLON.Vector3(0,-v, 0));
-        if(!delta.equalsWithEpsilon(BABYLON.Vector3.Zero())){ camera.target=camera.target.add(delta); camera.position=camera.position.add(delta); }
-        if(autoOrbit) camera.alpha += dt*0.12;
+      const speed = 0.8; let last = performance.now();
+      scene.onBeforeRenderObservable.add(() => {
+        const now = performance.now(); const dt = (now - last) / 1000; last = now;
+        let f = camera.target.subtract(camera.position); f.y = 0; if (f.lengthSquared() < 1e-8) { f = new BABYLON.Vector3(Math.cos(camera.alpha), 0, Math.sin(camera.alpha)); } f.normalize();
+        let rgt = new BABYLON.Vector3(f.z, 0, -f.x); rgt.normalize();
+        let delta = BABYLON.Vector3.Zero(); const v = speed * dt * Math.max(0.1, camera.radius);
+        if (keys.w) delta = delta.add(f.scale(v));
+        if (keys.s) delta = delta.subtract(f.scale(v));
+        if (keys.a) delta = delta.subtract(rgt.scale(v));
+        if (keys.d) delta = delta.add(rgt.scale(v));
+        if (keys.q) delta = delta.add(new BABYLON.Vector3(0, v, 0));
+        if (keys.e) delta = delta.add(new BABYLON.Vector3(0, -v, 0));
+        if (!delta.equalsWithEpsilon(BABYLON.Vector3.Zero())) { camera.target = camera.target.add(delta); camera.position = camera.position.add(delta); }
+        if (autoOrbit) camera.alpha += dt * 0.12;
       });
 
-      engine.setHardwareScalingLevel(window.devicePixelRatio>1 ? 1/window.devicePixelRatio : 1);
-      engine.runRenderLoop(()=>scene.render());
-      window.addEventListener('resize',()=>engine.resize());
+      engine.setHardwareScalingLevel(Math.max(1/window.devicePixelRatio, 0.5));
+
+      engine.runRenderLoop(() => {
+        if (scene.activeCamera) {
+          scene.render();
+        }
+      });
+      window.addEventListener('resize', () => engine.resize());
 
       // Tests
-      console.assert(canvas instanceof HTMLCanvasElement,'[TEST] Canvas exists');
-      console.assert(!!engine&&!!scene,'[TEST] Engine/Scene created');
-      console.assert(scene.activeCamera instanceof BABYLON.ArcRotateCamera,'[TEST] Camera is ArcRotate');
+      console.assert(canvas instanceof HTMLCanvasElement, '[TEST] Canvas exists');
+      console.assert(!!engine && !!scene, '[TEST] Engine/Scene created');
+      console.assert(scene.activeCamera instanceof BABYLON.ArcRotateCamera, '[TEST] Camera is ArcRotate');
     }
 
-    function resetView(){ camera.setPosition(new BABYLON.Vector3(1.6,0.8,-1.6)); camera.target.copyFromFloats(0,0,0); camera.alpha=Math.PI*1.25; camera.beta=Math.PI/2.6; }
+    function resetView() { camera.setPosition(new BABYLON.Vector3(1.6, 0.8, -1.6)); camera.target.copyFromFloats(0, 0, 0); camera.alpha = Math.PI * 1.25; camera.beta = Math.PI / 2.6; }
 
-    async function loadViewer(i){
-      const idx=Number(i);
-      grid.style.display='none'; viewer.style.display='block';
-      try{ await ensureBabylon(); }catch(e){ setHUD("<span class='err'>✗</span> Script load failed."); return; }
+    async function loadViewer(i) {
+      const idx = Number(i);
+      grid.style.display = 'none'; viewer.style.display = 'block';
+      try { await ensureBabylon(); } catch (e) { setHUD("<span class='err'>✗</span> Script load failed."); return; }
       await bootViewer();
 
       // focus canvas for WASD
-      setTimeout(()=>{ try{ canvas.focus(); }catch(_){} }, 0);
+      setTimeout(() => { try { canvas.focus(); } catch (_) { } }, 0);
 
-      setHUD('Loading '+NAMES[idx]+'…'); title.textContent=NAMES[idx]+` — (${idx}.spz)`;
+      setHUD('Loading ' + NAMES[idx] + '…'); title.textContent = NAMES[idx] + ` — (${idx}.spz)`;
 
-      const url=SPZ_PATH+idx+'.spz';
-      try{ const head=await fetch(url,{method:'HEAD'}); console.assert(head.ok,'[TEST] SPZ reachable: '+url); }catch(e){ console.warn('[TEST] HEAD failed for', url, e); }
+      const url = SPZ_PATH + idx + '.spz';
+      try { const head = await fetch(url, { method: 'HEAD' }); console.assert(head.ok, '[TEST] SPZ reachable: ' + url); } catch (e) { console.warn('[TEST] HEAD failed for', url, e); }
 
-      if(root){ root.getChildMeshes().forEach(m=>m.dispose()); root.dispose(); }
-      root=new BABYLON.TransformNode('root',scene);
+      if (root) { root.getChildMeshes().forEach(m => m.dispose()); root.dispose(); }
+      root = new BABYLON.TransformNode('root', scene);
 
-      let result; try{ result=await BABYLON.SceneLoader.ImportMeshAsync('',SPZ_PATH,idx+'.spz',scene); }
-      catch(e){ console.error(e); setHUD("<span class='err'>✗</span> Failed to load "+url); return; }
+      let result; try { result = await BABYLON.SceneLoader.ImportMeshAsync('', SPZ_PATH, idx + '.spz', scene); }
+      catch (e) { console.error(e); setHUD("<span class='err'>✗</span> Failed to load " + url); return; }
 
-      const meshes=result.meshes||[]; console.assert(meshes.length>0,'[TEST] Meshes loaded for '+idx);
+      const meshes = result.meshes || []; console.assert(meshes.length > 0, '[TEST] Meshes loaded for ' + idx);
 
       // center & orient
-      let min=new BABYLON.Vector3(+Infinity,+Infinity,+Infinity),max=new BABYLON.Vector3(-Infinity,-Infinity,-Infinity);
-      for(const m of meshes){ if(m.getBoundingInfo){ const bi=m.getBoundingInfo(); min=BABYLON.Vector3.Minimize(min,bi.boundingBox.minimumWorld); max=BABYLON.Vector3.Maximize(max,bi.boundingBox.maximumWorld);} m.parent=root; }
-      const center=min.add(max).scale(0.5); root.position=center.scale(-1);
-      root.rotation.x=Math.PI; // upright
-      root.rotation.y=Math.PI; // face camera
-      console.assert(Math.abs(root.rotation.x-Math.PI)<1e-6,'[TEST] Upright flip X=pi');
-      console.assert(Math.abs(root.rotation.y-Math.PI)<1e-6,'[TEST] Y rotation 180° applied');
+      let min = new BABYLON.Vector3(+Infinity, +Infinity, +Infinity), max = new BABYLON.Vector3(-Infinity, -Infinity, -Infinity);
+      for (const m of meshes) { if (m.getBoundingInfo) { const bi = m.getBoundingInfo(); min = BABYLON.Vector3.Minimize(min, bi.boundingBox.minimumWorld); max = BABYLON.Vector3.Maximize(max, bi.boundingBox.maximumWorld); } m.parent = root; }
+      const center = min.add(max).scale(0.5); root.position = center.scale(-1);
+      root.rotation.x = Math.PI; // upright
+      root.rotation.y = Math.PI; // face camera
+      console.assert(Math.abs(root.rotation.x - Math.PI) < 1e-6, '[TEST] Upright flip X=pi');
+      console.assert(Math.abs(root.rotation.y - Math.PI) < 1e-6, '[TEST] Y rotation 180° applied');
 
       // 2× closer default
-      const bbox=max.subtract(min).length();
-      const closeRadius=Math.max(0.00005,bbox*0.01);
-      camera.radius=closeRadius; camera.target=BABYLON.Vector3.Zero(); camera.beta=Math.PI/2.6;
+      const bbox = max.subtract(min).length();
+      const closeRadius = Math.max(0.00005, bbox * 0.01);
+      camera.radius = closeRadius; camera.target = BABYLON.Vector3.Zero(); camera.beta = Math.PI / 2.6;
       setHUD(`<span class='ok'>✓</span> Loaded <b>${NAMES[idx]} (${idx}.spz)</b>. Mouse: orbit/MMB pan/scroll. Keys: WASD/QE. R=auto‑orbit, 0=reset.`);
+
+      if (engine) engine.runRenderLoop(() => scene.render());
     }
 
-    (function init(){ const id=new URLSearchParams(location.search).get('id'); if(id==null) renderGrid(); else loadViewer(id); })();
+    (function init() { const id = new URLSearchParams(location.search).get('id'); if (id == null) renderGrid(); else loadViewer(id); })();
   </script>
 </body>
+
 </html>

@@ -188,7 +188,7 @@
 
   <script>
     // Revert to dashboard + fix button height, keep Back + WASD/QE and all viewer behaviors
-    const BASE = 'https://liamyehudai.github.io/spz';
+    const BASE = 'https://sbutltmedia.github.io/CDN/gsplat';
     const IMG_PATH = BASE + '/img/';
     const SPZ_PATH = BASE + '/assets/';
     const TOTAL = 32;
@@ -250,7 +250,7 @@
     function mkThumb(i) {
       const b = document.createElement('button'); b.className = 'thumb-btn'; b.setAttribute('aria-label', 'Open ' + NAMES[i]);
       const s = document.createElement('div'); s.className = 'thumb-sizer';
-      const img = document.createElement('img'); img.src = IMG_PATH + i + '.webp'; img.alt = NAMES[i] + ' thumbnail'; s.appendChild(img);
+      const img = document.createElement('img'); img.src = IMG_PATH + i + '.gif'; img.alt = NAMES[i] + ' thumbnail'; s.appendChild(img);
       const l = document.createElement('div'); l.className = 'label'; l.textContent = NAMES[i];
       b.appendChild(s); b.appendChild(l);
       b.onclick = () => openSplat(i);

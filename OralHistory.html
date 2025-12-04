@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Gaussian Splat Viewer — Babylon.js (Button Height Fixed)</title>
+  <style>
+    html, body { height: 100%; width: 100%; margin: 0; overflow: hidden; background: #0b0e11; }
+    #renderCanvas { width: 100%; height: 100%; touch-action: none; display:block; }
+    #status { position: fixed; left: 12px; bottom: 12px; color: #e5e7eb; font: 14px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; background: rgba(0,0,0,.55); padding: 10px 12px; border-radius: 10px; backdrop-filter: blur(6px); max-width: 60ch; box-sizing: border-box; }
+    #status b { color:#fff }
+    .ok { color:#86efac }
+    .warn { color:#fde68a }
+    .err { color:#fca5a5 }
+    button, .button-fixed { display:inline-flex; align-items:center; justify-content:center; padding:8px 12px; background:linear-gradient(180deg,#0b0e11,#151a21); border:1px solid #2a3240; border-radius:10px; color:#e5e7eb; cursor:pointer; font-size:14px; line-height:1; height:auto; box-sizing:border-box; }
+    button:hover, .button-fixed:hover { transform:translateY(-1px); box-shadow:0 2px 6px rgba(0,0,0,.4); }
+  </style>
+</head>
+<body>
+  <canvas id="renderCanvas"></canvas>
+  <div id="status" class="button-fixed">Loading…</div>
+
+  <script>
+  // --- Resilient script loader ---
+  function loadScript(url){return new Promise((resolve,reject)=>{const s=document.createElement('script');s.src=url;s.async=true;s.crossOrigin='anonymous';s.onload=()=>resolve(url);s.onerror=()=>reject(new Error('Failed '+url));document.head.appendChild(s);});}
+  async function loadAny(urls){let last;for(const u of urls){try{return await loadScript(u);}catch(e){last=e;}}throw last||new Error('All sources failed');}
+
+  const CDN={
+    babylon:[
+      'https://cdn.jsdelivr.net/npm/babylonjs@8.1.1/babylon.min.js',
+      'https://unpkg.com/babylonjs@8.1.1/babylon.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/babylonjs/8.1.1/babylon.min.js'
+    ],
+    loaders:[
+      'https://cdn.jsdelivr.net/npm/babylonjs-loaders@8.1.1/babylonjs.loaders.min.js',
+      'https://unpkg.com/babylonjs-loaders@8.1.1/babylonjs.loaders.min.js',
+      'https://cdnjs.cloudflare.com/ajax/libs/babylonjs/8.1.1/babylonjs.loaders.min.js'
+    ],
+    splat:[
+      'https://cdn.jsdelivr.net/npm/@babylonjs/loaders@8.1.1/SPLAT/splatFileLoader.min.js',
+      'https://unpkg.com/@babylonjs/loaders@8.1.1/SPLAT/splatFileLoader.min.js'
+    ]
+  };
+
+  const statusEl=document.getElementById('status');
+  function setStatus(msg){statusEl.innerHTML=msg;}
+
+  (async function main(){
+    try{
+      setStatus('<b>Loading engine…</b>');
+      await loadAny(CDN.babylon);
+      if(!window.BABYLON) throw new Error('BABYLON not loaded');
+      setStatus('<span class="ok">✓</span> Babylon loaded. <b>Loading loaders…</b>');
+      await loadAny(CDN.loaders);
+      try{await loadAny(CDN.splat);}catch(e){console.warn('SPLAT optional load failed.',e);}
+      setStatus('<span class="ok">✓</span> Loaders ready. <b>Booting scene…</b>');
+    }catch(e){console.error(e);setStatus('<span class="err">✗</span> Script load failed.');return;}
+
+    const canvas=document.getElementById('renderCanvas');
+    const engine=new BABYLON.Engine(canvas,true,{preserveDrawingBuffer:true,stencil:true,antialias:true});
+    const scene=new BABYLON.Scene(engine);
+    scene.clearColor=new BABYLON.Color4(0.03,0.05,0.07,1);
+
+    const camera=new BABYLON.ArcRotateCamera('cam',Math.PI*1.25,Math.PI/2.3,0.25,BABYLON.Vector3.Zero(),scene);
+    camera.attachControl(canvas,true);
+    camera.lowerRadiusLimit=0.00005;camera.minZ=0.00005;camera.maxZ=100000;camera.wheelPrecision=18;camera.wheelDeltaPercentage=0.01;
+    new BABYLON.HemisphericLight('h',new BABYLON.Vector3(0,1,0),scene).intensity=0;
+
+    const splatUrl='https://liamyehudai.github.io/spz/assets/gs_Dr_Chan_Scan.spz';
+    const root=new BABYLON.TransformNode('root',scene);
+    let result;
+    try{result=await BABYLON.SceneLoader.ImportMeshAsync('',splatUrl.substring(0,splatUrl.lastIndexOf('/')+1),splatUrl.substring(splatUrl.lastIndexOf('/')+1),scene);}catch(e){console.error(e);setStatus('<span class="err">✗</span> Failed to load SPZ');return;}
+
+    const meshes=(result&&result.meshes)||[];
+    let min=new BABYLON.Vector3(+Infinity,+Infinity,+Infinity),max=new BABYLON.Vector3(-Infinity,-Infinity,-Infinity);
+    for(const m of meshes){if(m.getBoundingInfo){const bi=m.getBoundingInfo();min=BABYLON.Vector3.Minimize(min,bi.boundingBox.minimumWorld);max=BABYLON.Vector3.Maximize(max,bi.boundingBox.maximumWorld);}m.parent=root;}
+    const center=min.add(max).scale(0.5);root.position=center.scale(-1);root.rotation.x=Math.PI;
+
+    const bboxLen=max.subtract(min).length();
+    const ultraRadius=Math.max(0.00005,bboxLen*0.01625);
+    camera.radius=ultraRadius;camera.target=BABYLON.Vector3.Zero();camera.beta=Math.PI/2.6;
+
+    setStatus('<span class="ok">✓</span> Loaded. Fixed height buttons intact.');
+
+    engine.runRenderLoop(()=>scene.render());window.addEventListener('resize',()=>engine.resize());
+  })();
+  </script>
+</body>
+</html>
